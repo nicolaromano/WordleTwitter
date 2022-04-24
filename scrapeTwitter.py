@@ -11,7 +11,7 @@ def scrapeTwitter(keyword: str, limit: int = 100, csv_output: str = "tweets.csv"
 
     Parameters:
         keyword (str): The keyword to search for.
-        limit (int): The number of tweets to scrape. Default is 100.
+        limit (int): The number of tweets to scrape. Default is 100. Pass None for no limit.
         csv_output (str): The path to the csv file to output to. Defaults to "tweets.csv".
 
     Returns:
@@ -19,13 +19,14 @@ def scrapeTwitter(keyword: str, limit: int = 100, csv_output: str = "tweets.csv"
     """
 
     # Delete the csv file if it exists
-    if os.isfile(csv_output):
+    if os.path.isfile(csv_output):
         os.remove(csv_output)
 
     c = twint.Config()
 
     c.Search = keyword
-    c.Limit = limit
+    if limit is not None:
+        c.Limit = limit
     c.Output = csv_output
     c.Store_csv = True
     c.Hide_output = True
@@ -78,7 +79,7 @@ def get_wordle_matrix(wordle_tweet: str) -> np.array:
 
 
 filename = "WordleTweets.csv"
-scrapeTwitter("#wordle", limit=100, csv_output=filename)
+scrapeTwitter("#wordle", limit=None, csv_output=filename)
 
 # Read the csv file into a Pandas dataframe
 tweets = pd.read_csv(filename)
