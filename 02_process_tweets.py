@@ -1,3 +1,8 @@
+import numpy as np
+import pandas as pd
+from tqdm import tqdm
+import re
+
 def get_wordle_matrix(wordle_tweet: str) -> np.array:
     """ Gets the wordle matrix from a tweet
 
@@ -13,14 +18,24 @@ def get_wordle_matrix(wordle_tweet: str) -> np.array:
 
         TODO: also return a dict with the associate word, the mode (dark/light or high contrast) and any other information
     """
-
+    
     # Only get the squares
-    squares = [chr(c) for c in [11036, 11035, 129000, 128998, 129001, 128999]]
+    
 
-    squares = ''.join(map(str, squares))
+    squares_chars = [chr(c) for c in [11036, 11035, 129000, 128998, 129001, 128999]]
 
+    squares_chars = ''.join(list(squares_chars))
+
+    expr = f"#Wordle\s+\d+\s+\d+/6 [{squares_chars}\s]"+"{5,}"
+    matches = re.findall(expr, wordle_tweet)
+
+    if len(matches) == 0:
+        return None
+    else:
+        wordle_tweet = matches[0]
+ 
     # Only keep the characters that are in the squares string
-    wordle_tweet = ''.join(filter(lambda x: x in squares, wordle_tweet))
+    wordle_tweet = ''.join(filter(lambda x: x in squares_chars, wordle_tweet))
 
     # Ensure that the length is a multiple of 5
     if len(wordle_tweet) % 5 != 0:
@@ -29,18 +44,23 @@ def get_wordle_matrix(wordle_tweet: str) -> np.array:
 
     # Create the matrix.
     # Check which square we have
-    wordle_matrix = np.array([squares.find(w)
-                             for w in wordle_tweet]).reshape((-1, 5))
+    # IMPORTANT: we need to convert to float as we are adding nan values afterwards, to pad to 5x6
+    # np.nan only works with floats
+    wordle_matrix = np.array([squares_chars.find(w)
+                             for w in wordle_tweet]).reshape((-1, 5)).astype(float)
     # We have 2 options per square type (wrong/correct but in the wrong position/correct)
     wordle_matrix //= 2
 
-    # Pad to 5x6 with -1
+    # Pad to 5x6 with nan
     if wordle_matrix.shape[0] < 6:
         wordle_matrix = np.pad(wordle_matrix, ((
-            0, 6-wordle_matrix.shape[0]), (0, 0)), 'constant', constant_values=-1)
+            0, 6-wordle_matrix.shape[0]), (0, 0)), 'constant', constant_values=np.nan)
+
+    assert(wordle_matrix.shape == (6, 5))
 
     return wordle_matrix
 
+filename = "WordleTweets.csv"
 
 # Read the csv file into a Pandas dataframe
 tweets = pd.read_csv(filename)
